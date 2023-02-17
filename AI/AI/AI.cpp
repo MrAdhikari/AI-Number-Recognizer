@@ -15,6 +15,16 @@ void GotoLine(std::fstream& file, unsigned int num) {
 }
 
 
+void PaintPixel(sf::Uint8* pixel, int pos_x, int pos_y, int size_x, int size_y, sf::Color color)
+{		//  {      the value of Y       }  {  x value  }
+	pixel[((size_y - pos_y) * size_x * 4 + pos_x * 4+0)] = color.r;
+	pixel[((size_y - pos_y) * size_x * 4 + pos_x * 4+1)] = color.g;
+	pixel[((size_y - pos_y) * size_x * 4 + pos_x * 4+2)] = color.b;
+	pixel[((size_y - pos_y) * size_x * 4 + pos_x * 4+3)] = color.a;
+
+}
+
+
 
 
 int main()
@@ -26,11 +36,12 @@ int main()
 	bool mouse_press = false;
 
 	//Textures for the screen and sprites
-	sf::Uint8* pixels = new sf::Uint8[SCREEN_WIDTH * SCREEN_HEIGHT * 4];
-	sf::Texture tex;
-	sf::Sprite sprite;
+	sf::Uint8* pixels = new sf::Uint8[784 * 255 * 4];
+
+	sf::Texture graphTexture;
+	sf::Sprite graphSprite;
 	//Number texture 
-	sf::Uint8* numberPixels = new sf::Uint8[28*28*4];
+	sf::Uint8* numberPixels = new sf::Uint8[28 * 28 * 4];
 	sf::Texture numberTex;
 	sf::Sprite numberSprite;
 	//Canvas for the writing text
@@ -49,6 +60,7 @@ int main()
 	fstream trainFile;
 	char num[5] = {0};
 
+
 	int lineNumber = 11;
 	
 	//Testing purpose
@@ -66,9 +78,10 @@ int main()
 
 #pragma region Texture
 	//Texture 
-	tex.create(900, 600);
-	sprite.setTexture(tex);
-	sprite.setPosition(50, 50);
+	graphTexture.create(784,255);
+	graphSprite.setTexture(graphTexture);
+	//graphSprite.scale(1.0f, 2.5f);
+	graphSprite.setPosition(50, 200);
 
 
 	//Texture of number
@@ -78,7 +91,7 @@ int main()
 	numberSprite.setPosition(1000, 40);
 	numberSprite.setScale(10, 10);
 
-	//Texture for canvas
+	//Texture for canvas writing
 	canvasTex.create(28, 28);
 	canvasTex.setSmooth(true);
 	canvasSprite.setTexture(canvasTex);
@@ -107,6 +120,16 @@ int main()
 	//Init stuffs 
 	window.setFramerateLimit(60);
 
+	//Main data set show 
+	for (int j =0; j < 255; j++)
+	{
+		for (int i = 0; i < 784; i++)
+		{
+			PaintPixel(pixels, i, j, 784, 255,sf::Color::Black);
+		}
+	}
+
+	//memset(graphPixels, 0, 784*255*4*sizeof(sf::Uint8));
 
 	//Our canvas 
 	for (int i = 0; i < 28 * 28 * 4; i += 4) {
@@ -146,9 +169,9 @@ int main()
 
 					cout << pix << endl;
 
-					if (pix >= 3135)
+					if (pix >= 3134)
 					{
-						pix = 3135;
+						pix = 3134;
 					}
 
 					for (int j = 0; j < 2; j++)
@@ -156,15 +179,18 @@ int main()
 
 						for (int i = 0; i < 5; i++)
 						{
-							canvasPixel[pix + 28 * j * 4 + i + 0] = 255;
-							canvasPixel[pix + 28 * j * 4 + i + 1] = 255;
-							canvasPixel[pix + 28 * j * 4 + i + 2] = 255;
-							canvasPixel[pix + 28 * j * 4 + i + 3] = 255;
+							canvasPixel[pix + 28 * j * 4 + i + 0] = 250;
+							canvasPixel[pix + 28 * j * 4 + i + 1] = 250;
+							canvasPixel[pix + 28 * j * 4 + i + 2] = 250;
+							canvasPixel[pix + 28 * j * 4 + i + 3] = 250;
+							//for the values of canvas pixel in graph
+
+							PaintPixel(pixels, pix/4, canvasPixel[pix], 784, 255, sf::Color::Red);
 						}
 
 					}
 					canvasTex.update(canvasPixel);
-
+					graphTexture.update(pixels);
 					//update mouse cursor position
 					mousePos = sf::Mouse::getPosition(window);
 
@@ -198,29 +224,46 @@ int main()
 
 								trainFile.getline(num, 5, ',');
 
+								/*pixels[i] = std::stoi(num);
+								pixels[pixels[i] * 784 * 4 + i] = 255;*/
+								
+								//PaintPixel(pixels, i / 4,std::stoi(num), 784, 255, sf::Color::Green);
 								numberPixels[i] = std::stoi(num);
-								numberPixels[i + 1] = std::stoi(num);
+								numberPixels[i + 1] = std::stoi(num) ;
 								numberPixels[i + 2] = std::stoi(num);
 								numberPixels[i + 3] = std::stoi(num);
+								pixels[i] = numberPixels[i];
+								pixels[i+1] = numberPixels[i+1];
+								pixels[i+2] = numberPixels[i+2];
+								pixels[i+3] = numberPixels[i+3];
 
-
+								
+								cout << std::stoi(num)<<":"<< (int)pixels[i]<<":"<<(int)numberPixels[i]<<";  ";
+								
 							}
 
 						}
+						
+						graphTexture.update(pixels);
 						numberTex.update(numberPixels);
+						
 
 					}
 					if (event.key.code == sf::Keyboard::Enter)
 					{
 						for (int i = 0; i < 28 * 28 * 4; i += 4) {
 
-							canvasPixel[i] = 50; // obviously, assign the values you need here to form your colorpixels[i+1] = g;
-							canvasPixel[i + 1] = 50; // obviously, assign the values you need here to form your colorpixels[i+1] = g;
-							canvasPixel[i + 2] = 50;
-							canvasPixel[i + 3] = 50;
+							canvasPixel[i] = 0; // obviously, assign the values you need here to form your colorpixels[i+1] = g;
+							canvasPixel[i + 1] = 0; // obviously, assign the values you need here to form your colorpixels[i+1] = g;
+							canvasPixel[i + 2] = 0;
+							canvasPixel[i + 3] = 0;
+
+							memset(pixels, 0, sizeof(sf::Uint8) * 784 * 255);
 
 						}
 						canvasTex.update(canvasPixel);
+						graphTexture.update(pixels);
+
 					}
 					break;
 
@@ -240,24 +283,15 @@ int main()
 	
 
 		//Main graph 
-		for (int j = 0; j < 28 ; i+=1)
-		{
-			for (int i = j*28*4; i < (j + 1) * 28 * 4; i += 4) 
-			{
-				pixels[i*j + ] = 1; // obviously, assign the values you need here to form your colorpixels[i+1] = g;
-				pixels[i + 1] = 100; // obviously, assign the values you need here to form your colorpixels[i+1] = g;
-				pixels[i + 2] = 200;
-				pixels[i + 3] = 255;
-
-			}
-		}
-		tex.update(pixels);
+		//PaintPixel(pixels, 10, 10, 784, 28,sf::Color::Cyan);
+		//graphTexture.update(graphPixels);
+		
 
 
 
 		window.clear();
 
-		window.draw(sprite);
+		window.draw(graphSprite);
 		window.draw(text);
 		window.draw(point.getSFML());
 		window.draw(numberSprite);
