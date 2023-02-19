@@ -1,28 +1,53 @@
-#include <SFML/Main.hpp>
-#include <SFML/Window.hpp>
-#include <SFML/Graphics.hpp>
+#include<iostream>
+#include <math.h>
 
-namespace my
+typedef struct IO
 {
-	class Point
-	{
-	private:
-		sf::CircleShape point;
-		
+	float *X = new float[784];
+	float *f[10];
+	float *t_f[10];
+};
 
-	public:
-		Point();
-		Point(float pos_x, float pos_y, float radius = 3.0f);
+typedef struct Layer_f
+{
+	float *X = new float[784];
+	float *w = new float[784 * 200];	float dw = new float[784 * 200];
+	float *b = new float[200];			float db = new float[200];
+	float *Y = new float[200];
 
-		sf::CircleShape& getSFML()
-		{
-			return point;
-		}
+};
 
-		void setColor(sf::Color color);
-	};
-	
+typedef struct Layer_h
+{
+	float *X = new float[200];
+	float *w = new float[200 * 200];	float dw = new float[200 * 200];
+	float *b = new float[200];			float db = new float[200];
+	float *Y = new float[200];
 
+};
 
+typedef struct Layer_l
+{
+	float *X = new float[200];
+	float *w = new float[200 * 10];		float dw = new float[200 * 10];
+	float *b = new float[10];			float db = new float[10];
+	float *Y = new float[10];
 
-}
+};
+
+class E_Layer
+{
+public:
+	IO io;
+	Layer_f LF;
+	Layer_h LH;
+	Layer_l LL;
+};
+
+class S_Layer
+{
+	float sigmoid(float x);
+	void Comp_y(Layer_f* L);
+	void Comp_y(Layer_h* L);
+	void Comp_y(Layer_l* L);
+};

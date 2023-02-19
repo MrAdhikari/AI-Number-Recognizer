@@ -1,5 +1,5 @@
 #include "AI.h"
-#include "My.h"
+#include "Neuron.h"
 
 using namespace Eigen;	
 using namespace std;

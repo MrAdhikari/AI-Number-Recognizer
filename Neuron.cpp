@@ -1,22 +1,48 @@
-#include "My.h"
-#include <math.h>
+#include "Neuron.h"
 
-my::Point::Point()
+inline float S_Layer::sigmoid(float x)
 {
-	
-	point.setFillColor(sf::Color::White);
-	point.setRadius(3.0f);
+	return (1 / (1 + pow(2.71828, (-x))));
 }
 
-void my::Point::setColor(sf::Color color)
+void S_Layer::Comp_y(Layer_f* L)
 {
-	point.setFillColor(color);
+	float tempY = 0;
+	for (int j = 0; j < 200; j++)
+	{
+		for (int i = 0; i < 784; i++)
+		{
+			 tempY += (L->w[j * 784 + i] * L->X[i]);
+		}
+		L->Y[j] = sigmoid(tempY + L->b[j]);
+		tempY = 0;
+	}
 }
 
-my::Point::Point(float pos_x, float pos_y, float radius /*= 3.0f*/)
+void S_Layer::Comp_y(Layer_h* L)
 {
-	point.setFillColor(sf::Color::White);
-	point.setPosition(pos_x, pos_y);
-	point.setRadius(radius);
+	float tempY = 0;
+	for (int j = 0; j < 200; j++)
+	{
+		for (int i = 0; i < 200; i++)
+		{
+			tempY += (L->w[j * 200 + i] * L->X[i]);
+		}
+		L->Y[j] = sigmoid(tempY + L->b[j]);
+		tempY = 0;
+	}
 }
 
+void S_Layer::Comp_y(Layer_l* L)
+{
+	float tempY = 0;
+	for (int j = 0; j < 10; j++)
+	{
+		for (int i = 0; i < 200; i++)
+		{
+			tempY += (L->w[j * 200 + i] * L->X[i]);
+		}
+		L->Y[j] = sigmoid(tempY + L->b[j]);
+		tempY = 0;
+	}
+}
