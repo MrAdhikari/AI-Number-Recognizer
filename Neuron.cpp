@@ -12,7 +12,9 @@ void S_Layer::Comp_y(Layer_f* L)
 	{
 		for (int i = 0; i < 784; i++)
 		{
-			 tempY += (L->w[j * 784 + i] * L->X[i]);
+			tempY += (L->w[j * 784 + i] * L->X[i]);
+			//cuda conversion
+
 		}
 		L->Y[j] = sigmoid(tempY + L->b[j]);
 		tempY = 0;

@@ -5,9 +5,17 @@ using namespace Eigen;
 using namespace std;
 
 
-void GotoLine(std::fstream& file, unsigned int num) {
+void GotoLineFromBeg(std::fstream& file, unsigned int num) {
 
 	file.seekg(std::ios::beg);
+	for (int i = 0; i < num - 1; ++i) {
+		file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	}
+
+}
+void GotoLineFromCurrent(std::fstream& file, unsigned int num) {
+
+	//file.seekg(std::ios::beg);
 	for (int i = 0; i < num - 1; ++i) {
 		file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	}
@@ -61,7 +69,7 @@ int main()
 	char num[5] = {0};
 
 
-	int lineNumber = 11;
+	int lineNumber = 10;
 	
 	//Testing purpose
 	//my::Point point(10,10, 5);
@@ -213,7 +221,9 @@ int main()
 						{
 							cout << "file is open" << endl;
 
-							GotoLine(trainFile, lineNumber = lineNumber + 1);
+							GotoLineFromBeg(trainFile, lineNumber += 1);
+							//GotoLineFromCurrent(trainFile, 1);
+
 							trainFile.getline(num, 5, ',');
 
 							textTrainNumber.setString(num);
@@ -238,7 +248,7 @@ int main()
 								pixels[i+3] = numberPixels[i+3];
 
 								
-								cout << std::stoi(num)<<":"<< (int)pixels[i]<<":"<<(int)numberPixels[i]<<";  ";
+								//cout << std::stoi(num)<<":"<< (int)pixels[i]<<":"<<(int)numberPixels[i]<<";  ";
 								
 							}
 
