@@ -11,8 +11,8 @@ typedef struct IO
 typedef struct Layer_f
 {
 	float *X = new float[784];
-	float *w = new float[784 * 200];	float dw = new float[784 * 200];
-	float *b = new float[200];			float db = new float[200];
+	float *w = new float[784 * 200];	float* dw = new float[784 * 200];
+	float *b = new float[200];			float* db = new float[200];
 	float *Y = new float[200];
 
 };
@@ -20,8 +20,8 @@ typedef struct Layer_f
 typedef struct Layer_h
 {
 	float *X = new float[200];
-	float *w = new float[200 * 200];	float dw = new float[200 * 200];
-	float *b = new float[200];			float db = new float[200];
+	float *w = new float[200 * 200];	float* dw = new float[200 * 200];
+	float *b = new float[200];			float* db = new float[200];
 	float *Y = new float[200];
 
 };
@@ -29,8 +29,8 @@ typedef struct Layer_h
 typedef struct Layer_l
 {
 	float *X = new float[200];
-	float *w = new float[200 * 10];		float dw = new float[200 * 10];
-	float *b = new float[10];			float db = new float[10];
+	float *w = new float[200 * 10];		float* dw = new float[200 * 10];
+	float *b = new float[10];			float* db = new float[10];
 	float *Y = new float[10];
 
 };

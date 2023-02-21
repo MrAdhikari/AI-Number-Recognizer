@@ -64,7 +64,7 @@ int main()
 	int lineNumber = 11;
 	
 	//Testing purpose
-	my::Point point(10,10, 5);
+	//my::Point point(10,10, 5);
 
 	sf::Vector2i mousePos;
 
@@ -293,7 +293,7 @@ int main()
 
 		window.draw(graphSprite);
 		window.draw(text);
-		window.draw(point.getSFML());
+		
 		window.draw(numberSprite);
 		window.draw(textCursorPos_x);
 		window.draw(textCursorPos_y);
