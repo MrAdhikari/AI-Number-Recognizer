@@ -1,0 +1,312 @@
+
+int c_main(E_Layer *EL)
+{
+    Layer_f devLF;
+    Layer_h devLH[2];
+    Layer_l devLL;
+
+    float real_cost = 0;
+    float calc_cost = 0;
+
+
+    /*-----memeory allocation ---------*/
+    cudaMalloc((void**)&devLF.X, 784 * sizeof(float));
+    cudaCheckErrors("Elayer allocation error");
+    cudaMalloc((void**)&devLF.w, 784 * 200 * sizeof(float));
+    cudaMalloc((void**)&devLF.refw, 784 * 200 * sizeof(float));
+    cudaMalloc((void**)&devLF.b, 200 * sizeof(float));
+    cudaMalloc((void**)&devLF.Y, 200 * sizeof(float));
+
+    // devHF[0] mem allocation
+    //cudaMalloc((void**)&devLF.X, 784 * sizeof(float));
+    cudaMalloc((void**)&devLH[0].w, 200 * 200 * sizeof(float));
+    cudaCheckErrors("Elayer allocation error");
+    cudaMalloc((void**)&devLH[0].refw, 200 * 200 * sizeof(float));
+    cudaMalloc((void**)&devLH[0].b, 200 * sizeof(float));
+    cudaMalloc((void**)&devLH[0].Y, 200 * sizeof(float));
+
+    // devHF[0] mem allocation
+    //cudaMalloc((void**)&devLF.X, 784 * sizeof(float));
+    cudaMalloc((void**)&devLH[1].w, 200 * 200 * sizeof(float));
+    cudaCheckErrors("Elayer allocation error");
+    cudaMalloc((void**)&devLH[1].refw, 200 * 200 * sizeof(float));
+    cudaMalloc((void**)&devLH[1].b, 200 * sizeof(float));
+    cudaMalloc((void**)&devLH[1].Y, 200 * sizeof(float));
+
+    //devLL mem allocation
+    cudaMalloc((void**)&devLL.w, 200 * 10 * sizeof(float));
+    cudaCheckErrors("Elayer allocation error");
+    cudaMalloc((void**)&devLL.refw, 200 * 10  * sizeof(float));
+    cudaMalloc((void**)&devLL.b, 10 * sizeof(float));
+    cudaMalloc((void**)&devLL.Y, 10 * sizeof(float));
+
+
+    cudaMemcpy(devLF.w, EL->LF.w, 784 * 200 * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheckErrors("copy failed LF");
+    cudaMemcpy(devLF.b, EL->LF.b, 200 * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheckErrors("copy failed LF");
+    cudaMemcpy(devLF.Y, EL->LF.Y, 200 * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheckErrors("copy failed LF");
+
+    cudaMemcpy(devLH[0].w, EL->LH[0].w, 200 * 200 * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheckErrors("copy failed LH");
+    cudaMemcpy(devLH[0].b, EL->LH[0].b, 200 * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheckErrors("copy failed LH");
+    cudaMemcpy(devLH[0].Y, EL->LH[0].Y, 200 * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheckErrors("copy failed LH");
+
+    cudaMemcpy(devLH[1].w, EL->LH[1].w, 200 * 200 * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheckErrors("copy failed LH");
+    cudaMemcpy(devLH[1].b, EL->LH[1].b, 200 * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheckErrors("copy failed LH");
+    cudaMemcpy(devLH[1].Y, EL->LH[1].Y, 200 * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheckErrors("copy failed LH");
+
+    cudaMemcpy(devLL.w, EL->LL.w, 200 * 10 * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheckErrors("copy failed LL");
+    cudaMemcpy(devLL.b, EL->LL.b, 10 * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheckErrors("copy failed LL");
+    cudaMemcpy(devLL.Y, EL->LL.Y, 10 * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheckErrors("copy failed LL");
+
+
+    //Y_ref is filled with output of io.x and weights and bias
+    for (int i = 0; i < 10; i++)
+    {
+        cudaMemcpy(devLF.X, &EL->io.X[784 * i], 784 * sizeof(float), cudaMemcpyHostToDevice);
+        cudaCheckErrors("copy failed from io failed");
+
+
+
+        /*-------upto last layer output coding-------*/
+        Sqs_X << <1, 784 >> > (devLF.X);
+
+        //compute io --> layer first out(devLF.Y)
+        Dot_w_X << <200, 784 >> > (devLF.refw, devLF.w, devLF.X, 200, 784);
+        cudaDeviceSynchronize();
+        cudaCheckErrors("synchronize failed LF");
+
+        Comp_y << <1, 200 >> > (devLF.Y, devLF.refw, devLF.b, 200, 784);
+        cudaDeviceSynchronize();
+        cudaCheckErrors("synchronize failed LF");
+
+
+
+        //compute devLF.Y --> devLH[0].Y
+        Dot_w_X << <200, 200 >> > (devLH[0].refw, devLH[0].w, devLF.Y, 200, 200);
+        cudaCheckErrors("fun failed LH[0]");
+        cudaDeviceSynchronize();
+        cudaCheckErrors("synchronize failed LH[0]");
+
+        Comp_y << <1, 200 >> > (devLH[0].Y, devLH[0].refw, devLH[0].b, 200, 200);
+        cudaCheckErrors("fun failed LH[0]");
+        cudaDeviceSynchronize();
+        cudaCheckErrors("synchronize failed LH[0]");
+
+
+        //compute devLH[0].Y --> devLH[1].Y
+        Dot_w_X << <200, 200 >> > (devLH[1].refw, devLH[1].w, devLH[0].Y, 200, 200);
+        cudaCheckErrors("fun failed LH[1]");
+        cudaDeviceSynchronize();
+        cudaCheckErrors("synchronize failed LH[1]");
+
+        Comp_y << <1, 200 >> > (devLH[1].Y, devLH[1].refw, devLH[1].b, 200, 200);
+        cudaCheckErrors("fun failed LH[1]");
+        cudaDeviceSynchronize();
+        cudaCheckErrors("synchronize failed LH[1]");
+
+
+
+
+
+        //compute devLH[1].Y --> devLL.Y
+        Dot_w_X << <10, 200 >> > (devLL.refw, devLL.w, devLH[1].Y, 10, 200);
+        cudaCheckErrors("fun failed LL");
+        cudaDeviceSynchronize();
+        cudaCheckErrors("synchronize failed LL");
+
+        Comp_y << <1, 10 >> > (devLL.Y, devLL.refw, devLL.b, 10, 200);
+        cudaCheckErrors("fun failed[10]");
+        cudaDeviceSynchronize();
+        cudaCheckErrors("synchronize failed[10]");
+
+        cudaMemcpy(EL->io.Y_ref, devLL.Y, 10 * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaCheckErrors("cpy failed");
+
+        real_cost += EL->Compute_cost(i);
+    }
+    real_cost /= 10;
+
+    printf("real_cost is %f", real_cost);
+    
+    
+
+
+    /*--------mini map loop ---------*/
+    for (int  j= 0; j < 200 * 10 ; j++)
+    {
+        EL->LL.w[j] += 0.1f;
+        cudaMemcpy(&devLL.w[j], &EL->LL.w[j], sizeof(float), cudaMemcpyHostToDevice);
+        EL->LL.w[j] -= 0.1f;
+
+        calc_cost = 0;
+
+        for (int i = 0; i < 10; i++)
+        {
+            cudaMemcpy(devLF.X, &EL->io.X[784 * i], 784 * sizeof(float), cudaMemcpyHostToDevice);
+            cudaCheckErrors("copy failed from io failed");
+
+
+            /*-------upto last layer output coding-------*/
+            Sqs_X << <1, 784 >> > (devLF.X);
+
+            //compute io --> layer first out(devLF.Y)
+            Dot_w_X << <200, 784 >> > (devLF.refw, devLF.w, devLF.X, 200, 784);
+            cudaDeviceSynchronize();
+            cudaCheckErrors("synchronize failed LF");
+
+            Comp_y << <1, 200 >> > (devLF.Y, devLF.refw, devLF.b, 200, 784);
+            cudaDeviceSynchronize();
+            cudaCheckErrors("synchronize failed LF");
+
+
+
+            //compute devLF.Y --> devLH[0].Y
+            Dot_w_X << <200, 200 >> > (devLH[0].refw, devLH[0].w, devLF.Y, 200, 200);
+            cudaCheckErrors("fun failed LH[0]");
+            cudaDeviceSynchronize();
+            cudaCheckErrors("synchronize failed LH[0]");
+
+            Comp_y << <1, 200 >> > (devLH[0].Y, devLH[0].refw, devLH[0].b, 200, 200);
+            cudaCheckErrors("fun failed LH[0]");
+            cudaDeviceSynchronize();
+            cudaCheckErrors("synchronize failed LH[0]");
+
+
+            //compute devLH[0].Y --> devLH[1].Y
+            Dot_w_X << <200, 200 >> > (devLH[1].refw, devLH[1].w, devLH[0].Y, 200, 200);
+            cudaCheckErrors("fun failed LH[1]");
+            cudaDeviceSynchronize();
+            cudaCheckErrors("synchronize failed LH[1]");
+
+            Comp_y << <1, 200 >> > (devLH[1].Y, devLH[1].refw, devLH[1].b, 200, 200);
+            cudaCheckErrors("fun failed LH[1]");
+            cudaDeviceSynchronize();
+            cudaCheckErrors("synchronize failed LH[1]");
+
+
+
+
+
+            //compute devLH[1].Y --> devLL.Y
+            Dot_w_X << <10, 200 >> > (devLL.refw, devLL.w, devLH[1].Y, 10, 200);
+            cudaCheckErrors("fun failed LL");
+            cudaDeviceSynchronize();
+            cudaCheckErrors("synchronize failed LL");
+
+            Comp_y << <1, 10 >> > (devLL.Y, devLL.refw, devLL.b, 10, 200);
+            cudaCheckErrors("fun failed[10]");
+            cudaDeviceSynchronize();
+            cudaCheckErrors("synchronize failed[10]");
+
+            cudaMemcpy(EL->io.Y_ref, devLL.Y, 10 * sizeof(float), cudaMemcpyDeviceToHost);
+            cudaCheckErrors("cpy failed");
+
+            calc_cost += EL->Compute_cost(i);
+
+        }
+        calc_cost /= 10;
+
+        cudaMemcpy(&devLL.w[j], &EL->LL.w[j], sizeof(float), cudaMemcpyHostToDevice);
+        cudaCheckErrors("cpy failed device to host");
+
+        
+        printf("cost %.2f, ", (real_cost - calc_cost));
+        
+        EL->LL.dw[j] = 2 * (real_cost - calc_cost); 
+    }
+
+    for (int i = 0; i < 200 * 10; i++)
+    {
+        EL->LL.w[i] += EL->LL.dw[i];
+    }
+
+
+    cudaMemcpy(EL->LH[0].Y, devLH[0].Y, 200 * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaCheckErrors("cpy failed");
+
+    //cudaStatus = cudaMemcpy(c, dev_c, size * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(EL->LF.Y, devLF.Y, 200 * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaCheckErrors("cpy failed");
+
+    cudaMemcpy(EL->io.Y, devLL.Y, 10 * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaCheckErrors("cpy failed");
+
+
+
+    cudaFree(devLF.X);
+    cudaFree(devLF.b);
+    //cudaFree(&devLF.db);
+    cudaFree(devLF.w);
+    cudaFree(devLF.refw);
+    //cudaFree(&devLF.dw);
+    cudaFree(devLF.Y);
+
+    cudaFree(devLH[0].b);
+    //cudaFree(&devLH[0].db);
+    cudaFree(devLH[0].w);
+    cudaFree(devLH[0].refw);
+    //cudaFree(&devLH[0].dw);
+    cudaFree(devLH[0].Y);
+
+    cudaFree(devLH[1].b);
+    //cudaFree(&devLH[1].db);
+    cudaFree(devLH[1].w);
+    cudaFree(devLH[1].refw);
+    //cudaFree(&devLH[1].dw);
+    cudaFree(devLH[1].Y);
+
+    cudaFree(devLL.b);
+    //cudaFree(&devLL.db);
+    cudaFree(devLL.w);
+    cudaFree(devLL.refw);
+    //cudaFree(&devLL.dw);
+    cudaFree(devLL.Y);
+    cudaCheckErrors("free mem failed");
+
+    printf("-- cuda completed --\n");
+
+
+
+    /*-------end last layer output coding-------*/
+    
+    
+    
+    
+    
+    
+    //const int arraySize = 5;
+    //const int a[arraySize] = { 1, 2, 3, 4, 5 };
+    //const int b[arraySize] = { 10, 20, 30, 40, 50 };
+    //int c[arraySize] = { 0 };
+
+    //// Add vectors in parallel.
+    //cudaError_t cudaStatus = addWithCuda(c, a, b, arraySize);
+    //if (cudaStatus != cudaSuccess) {
+    //    fprintf(stderr, "addWithCuda failed!");
+    //    return 1;
+    //}
+
+    //printf("{1,2,3,4,5} + {10,20,30,40,50} = {%d,%d,%d,%d,%d}\n",
+    //    c[0], c[1], c[2], c[3], c[4]);
+
+    //// cudaDeviceReset must be called before exiting in order for profiling and
+    //// tracing tools such as Nsight and Visual Profiler to show complete traces.
+    //cudaStatus = cudaDeviceReset();
+    //if (cudaStatus != cudaSuccess) {
+    //    fprintf(stderr, "cudaDeviceReset failed!");
+    //    return 1;
+    //}
+
+    return 0;
+}
